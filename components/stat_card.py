@@ -1,28 +1,31 @@
 from dash import html
-import dash_bootstrap_components as dbc
 
-def StatCard(title, value, delta, delta_text, id_prefix):
-    delta_color = "text-bull" if delta > 0 else "text-bear" if delta < 0 else "text-muted"
-    delta_icon = "bi bi-arrow-up-right" if delta > 0 else "bi bi-arrow-down-right" if delta < 0 else "bi bi-dash"
-    
+
+def StatCard(title, value, delta, delta_pct, id_prefix, subtitle=None):
+    """Market stat card: label, big tabular number, delta chip, optional subtitle."""
+    direction = "up" if delta > 0 else "down" if delta < 0 else "flat"
+    delta_icon = {
+        "up": "bi bi-caret-up-fill",
+        "down": "bi bi-caret-down-fill",
+        "flat": "bi bi-dash-lg",
+    }[direction]
+
     return html.Div(
         [
-            html.Div(title, className="card-title"),
+            html.Div(title, className="stat-card-label"),
+            html.Div(
+                f"{value:,.2f}" if isinstance(value, (int, float)) else str(value),
+                className="stat-card-value num",
+            ),
             html.Div(
                 [
-                    html.Div(f"{value:,.2f}" if isinstance(value, (int, float)) else value, className="stat-value tabular-nums", id=f"{id_prefix}-value"),
-                    html.Div(
-                        [
-                            html.I(className=delta_icon),
-                            html.Span(f"{abs(delta_text):.2f}%" if isinstance(delta_text, (int, float)) else delta_text)
-                        ],
-                        className=f"stat-delta {delta_color} tabular-nums",
-                        id=f"{id_prefix}-delta"
-                    )
+                    html.I(className=delta_icon),
+                    html.Span(f"{delta:+,.2f} ({delta_pct:+.2f}%)"),
                 ],
-                style={"display": "flex", "alignItems": "baseline", "justifyContent": "space-between"}
-            )
+                className=f"stat-card-delta {direction} num",
+            ),
+            html.Div(subtitle, className="stat-card-sub") if subtitle else None,
         ],
         className="terminal-card",
-        id=f"{id_prefix}-card"
+        id=f"{id_prefix}-card",
     )

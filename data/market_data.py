@@ -98,7 +98,6 @@ def get_current_price_info(symbol: str) -> dict:
     df = fetch_data_with_retry(symbol, period="5d", interval="1d")
     if df.empty or len(df) < 2:
         return {"close": 0.0, "change": 0.0, "change_pct": 0.0, "volume": 0}
-    
     last_close = df['Close'].iloc[-1]
     prev_close = df['Close'].iloc[-2]
     change = last_close - prev_close
@@ -109,3 +108,69 @@ def get_current_price_info(symbol: str) -> dict:
         "change_pct": float(change_pct),
         "volume": int(df['Volume'].iloc[-1])
     }
+
+
+@cache.memoize(timeout=900)
+def get_batch_price_info(symbols: list) -> dict:
+    """
+    Fetch latest close / day-change / volume for MANY symbols in a SINGLE
+    yfinance call (yf.download batches all tickers into one request).
+    Returns {symbol: {close, change, change_pct, volume}}.
+    This is ~50x faster than calling get_current_price_info in a loop.
+    """
+    result = {s: {"close": 0.0, "change": 0.0, "change_pct": 0.0, "volume": 0} for s in symbols}
+    if not symbols:
+        return result
+    try:
+        data = yf.download(
+            tickers=symbols,
+            period="5d",
+            interval="1d",
+            group_by="ticker",
+            threads=True,
+            progress=False,
+            auto_adjust=True,
+        )
+    except Exception as e:
+        logger.error(f"Batch download failed: {e}")
+        data = None
+
+    if data is not None:
+        for s in symbols:
+            try:
+                if len(symbols) == 1:
+                    closes = data["Close"]
+                else:
+                    closes = data[s]["Close"]
+                closes = closes.dropna()
+                if len(closes) >= 2:
+                    last, prev = float(closes.iloc[-1]), float(closes.iloc[-2])
+                    try:
+                        vols = data[s]["Volume"].dropna() if len(symbols) > 1 else data["Volume"].dropna()
+                        vol = int(vols.iloc[-1]) if len(vols) else 0
+                    except (KeyError, IndexError):
+                        vol = 0
+                    result[s] = {
+                        "close": last,
+                        "change": last - prev,
+                        "change_pct": ((last - prev) / prev) * 100,
+                        "volume": vol,
+                    }
+            except (KeyError, IndexError, TypeError):
+                continue  # keep zeroed defaults for this symbol
+
+    # If nothing came back (network blocked / rate limited), fall back to
+    # mock data so the app stays usable in restricted environments.
+    if all(v["close"] == 0 for v in result.values()):
+        logger.warning("Batch download returned no data — using mock fallback.")
+        for s in symbols:
+            m = generate_mock_data(s, period="5d", interval="1d")
+            if len(m) >= 2:
+                last, prev = float(m['Close'].iloc[-1]), float(m['Close'].iloc[-2])
+                result[s] = {
+                    "close": last,
+                    "change": last - prev,
+                    "change_pct": ((last - prev) / prev) * 100,
+                    "volume": int(m['Volume'].iloc[-1]),
+                }
+    return result

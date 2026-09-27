@@ -3,6 +3,8 @@ from dash import html, dcc, callback, Input, Output, State
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 import pandas as pd
+
+import theme
 from data.market_data import get_daily_history
 from data.nifty50 import NIFTY_50
 from analytics.indicators import compute_sma, compute_rsi
@@ -16,7 +18,12 @@ dash.register_page(__name__, path='/backtest', name='Strategy Backtest')
 stock_options = [{"label": f"{s['symbol']} - {s['name']}", "value": s['symbol']} for s in NIFTY_50]
 
 layout = html.Div([
-    html.H2("Strategy Backtest Engine", style={"marginBottom": "24px"}),
+    html.Div([
+        html.Div([
+            html.H2("Strategy Backtest Engine", className="page-title"),
+            html.Div("Signal-based strategies vs buy-and-hold, with realistic Indian brokerage costs.", className="page-subtitle"),
+        ]),
+    ], className="page-header"),
     
     dbc.Row([
         dbc.Col([
@@ -99,17 +106,16 @@ def update_backtest(symbol, strategy, period):
     
     # Plot
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=eq_strat.index, y=eq_strat.values, name='Strategy', line=dict(color='var(--accent)', width=2)))
-    fig.add_trace(go.Scatter(x=eq_bh.index, y=eq_bh.values, name='Buy & Hold', line=dict(color='var(--text-muted)', width=1, dash='dash')))
-    
+    fig.add_trace(go.Scatter(x=eq_strat.index, y=eq_strat.values, name='Strategy', line=dict(color=theme.ACCENT, width=2)))
+    fig.add_trace(go.Scatter(x=eq_bh.index, y=eq_bh.values, name='Buy & Hold', line=dict(color=theme.MUTED, width=1.4, dash='dash')))
+
+    theme.apply_theme(fig)
     fig.update_layout(
-        template="plotly_dark",
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
-        margin=dict(l=0, r=0, t=20, b=0),
-        height=400,
+        margin=dict(l=8, r=16, t=30, b=8),
+        height=420,
         hovermode='x unified',
-        yaxis_title="Cumulative Return"
+        yaxis_title="Cumulative Return",
+        yaxis_tickformat=".0%",
     )
     
     # Metrics

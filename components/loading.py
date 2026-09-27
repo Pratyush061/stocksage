@@ -1,15 +1,15 @@
 from dash import dcc, html
+import theme
+
 
 def StyledLoading(children, id=None):
+    """Themed loading wrapper for callbacks."""
+    kwargs = {}
     if id:
-        return dcc.Loading(
-            id=id,
-            type="default",
-            color="var(--accent)",
-            children=children
-        )
+        kwargs["id"] = id
     return dcc.Loading(
         type="default",
-        color="var(--accent)",
-        children=children
+        color=theme.ACCENT,
+        children=children,
+        **kwargs,
     )

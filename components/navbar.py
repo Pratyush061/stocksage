@@ -1,32 +1,56 @@
-from dash import html, dcc
-import dash_bootstrap_components as dbc
+from dash import html, dcc, callback, Input, Output
+
+NAV_ITEMS = [
+    ("bi bi-grid-1x2", "Overview", "/"),
+    ("bi bi-graph-up-arrow", "Analysis", "/analysis"),
+    ("bi bi-cpu", "AI Prediction", "/prediction"),
+    ("bi bi-funnel", "Screener", "/screener"),
+    ("bi bi-activity", "Backtest", "/backtest"),
+]
+
 
 def get_sidebar():
     return html.Div(
         [
             html.Div(
                 [
-                    html.Img(src="/assets/logo.svg", style={"width": "24px", "marginRight": "12px"}),
-                    html.H5("StockSage", className="brand-text", style={"margin": "0", "fontWeight": "600", "color": "white"}),
+                    html.Img(src="/assets/logo.svg", alt="StockSage logo",
+                             style={"width": "26px", "height": "26px"}),
+                    html.Div(
+                        [
+                            html.H5("StockSage", className="brand-text"),
+                            html.Div("NSE Market Intelligence",
+                                     style={"fontSize": "10px", "color": "var(--text-muted)",
+                                            "marginTop": "-2px"}),
+                        ],
+                    ),
                 ],
-                style={"padding": "20px", "display": "flex", "alignItems": "center", "borderBottom": "1px solid var(--border)"}
+                className="sidebar-header",
             ),
-            html.Nav(
-                [
-                    dcc.Link([html.I(className="bi bi-grid"), html.Span("Overview", className="nav-text")], href="/", className="nav-link", id="nav-overview"),
-                    dcc.Link([html.I(className="bi bi-bar-chart"), html.Span("Analysis", className="nav-text")], href="/analysis", className="nav-link", id="nav-analysis"),
-                    dcc.Link([html.I(className="bi bi-cpu"), html.Span("AI Prediction", className="nav-text")], href="/prediction", className="nav-link", id="nav-prediction"),
-                    dcc.Link([html.I(className="bi bi-funnel"), html.Span("Screener", className="nav-text")], href="/screener", className="nav-link", id="nav-screener"),
-                    dcc.Link([html.I(className="bi bi-graph-up"), html.Span("Backtest", className="nav-text")], href="/backtest", className="nav-link", id="nav-backtest"),
-                ],
-                style={"paddingTop": "16px", "flex": "1"}
-            ),
+            html.Nav(id="sidebar-nav", className="sidebar-nav"),
             html.Div(
-                [
-                    html.Small("Data: Yahoo Finance (delayed) · Built with Dash + Plotly", style={"color": "var(--text-muted)", "fontSize": "11px", "textAlign": "center", "display": "block", "lineHeight": "1.4"})
-                ],
-                style={"padding": "16px", "borderTop": "1px solid var(--border)"}
-            )
+                "Data: Yahoo Finance (delayed)<br>Built with Dash + Plotly",
+                className="sidebar-footer",
+            ),
         ],
-        className="sidebar"
+        className="sidebar",
     )
+
+
+@callback(Output("sidebar-nav", "children"), Input("url", "pathname"))
+def render_nav(pathname):
+    """Sidebar navigation with active-page highlighting."""
+    links = []
+    for icon, label, href in NAV_ITEMS:
+        active = " active" if pathname == href else ""
+        links.append(
+            dcc.Link(
+                [
+                    html.I(className=f"bi {icon} nav-icon"),
+                    html.Span(label, className="nav-text"),
+                ],
+                href=href,
+                className=f"nav-link{active}",
+            )
+        )
+    return links

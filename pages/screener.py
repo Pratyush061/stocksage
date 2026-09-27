@@ -11,7 +11,12 @@ from components.disclaimer import Disclaimer
 dash.register_page(__name__, path='/screener', name='Screener')
 
 layout = html.Div([
-    html.H2("Quantitative Screener", style={"marginBottom": "24px"}),
+    html.Div([
+        html.Div([
+            html.H2("Quantitative Screener", className="page-title"),
+            html.Div("Filter the Nifty 50 by momentum, trend, volatility and volume signals.", className="page-subtitle"),
+        ]),
+    ], className="page-header"),
     
     dbc.Row([
         dbc.Col([
@@ -51,7 +56,7 @@ layout = html.Div([
         ], md=3),
         dbc.Col([
             html.Div(style={"height": "25px"}),
-            dbc.Button("Run Screen", id="run-screen", color="primary", className="w-100", style={"backgroundColor": "var(--accent)", "border": "none", "color": "var(--bg)", "fontWeight": "600"})
+            dbc.Button("Run Screen", id="run-screen", color="primary", className="w-100")
         ], md=3)
     ], style={"marginBottom": "24px"}),
     

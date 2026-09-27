@@ -5,6 +5,8 @@ import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
 import plotly.express as px
+
+import theme
 from data.market_data import get_daily_history
 from data.nifty50 import NIFTY_50
 from analytics.models import get_predictions
@@ -106,35 +108,33 @@ def run_prediction(symbol, model_name, horizon):
     fig = go.Figure()
     
     # Historical
-    fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df['Close'], name='Actual Price', line=dict(color='var(--text)', width=2)))
-    
+    fig.add_trace(go.Scatter(x=plot_df.index, y=plot_df['Close'], name='Actual Price', line=dict(color=theme.TEXT, width=2)))
+
     # Model Fit
-    fig.add_trace(go.Scatter(x=plot_df.index, y=pred_prices, name='Model Fit', line=dict(color='var(--accent)', dash='dash', width=1)))
-    
+    fig.add_trace(go.Scatter(x=plot_df.index, y=pred_prices, name='Model Fit', line=dict(color=theme.ACCENT, dash='dash', width=1)))
+
     # Forecast point and band
-    fig.add_trace(go.Scatter(x=[last_date, target_date], y=[last_close, fc_price], name='Forecast', line=dict(color='#F59E0B', width=2, dash='dot')))
-    fig.add_trace(go.Scatter(x=[target_date], y=[fc_price], mode='markers', name='Target', marker=dict(color='#F59E0B', size=8)))
-    
+    fig.add_trace(go.Scatter(x=[last_date, target_date], y=[last_close, fc_price], name='Forecast', line=dict(color=theme.PREDICTION, width=2, dash='dot')))
+    fig.add_trace(go.Scatter(x=[target_date], y=[fc_price], mode='markers', name='Target', marker=dict(color=theme.PREDICTION, size=9, line=dict(color=theme.BG, width=2))))
+
     # Confidence Band
     fig.add_trace(go.Scatter(
-        x=[last_date, target_date, target_date, last_date], 
-        y=[last_close, fc_upper, fc_lower, last_close], 
-        fill='toself', 
-        fillcolor='rgba(245,158,11,0.12)', 
+        x=[last_date, target_date, target_date, last_date],
+        y=[last_close, fc_upper, fc_lower, last_close],
+        fill='toself',
+        fillcolor=theme.hex_to_rgba(theme.PREDICTION, 0.12),
         line=dict(color='rgba(255,255,255,0)'),
         hoverinfo="skip",
         showlegend=False,
         name='80% Confidence'
     ))
-    
-    fig.add_vline(x=last_date, line_width=1, line_dash="dash", line_color="var(--text-muted)")
-    
+
+    fig.add_vline(x=last_date, line_width=1, line_dash="dash", line_color=theme.MUTED)
+
+    theme.apply_theme(fig)
     fig.update_layout(
-        template="plotly_dark",
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
-        margin=dict(l=0, r=0, t=20, b=0),
-        height=400,
+        margin=dict(l=8, r=16, t=30, b=8),
+        height=420,
         hovermode='x unified'
     )
     
@@ -145,7 +145,8 @@ def run_prediction(symbol, model_name, horizon):
     if dir_acc < 55:
         warning_chip = html.Div(
             [html.I(className="bi bi-exclamation-triangle"), " Weak signal — model near coin-flip on this stock"],
-            style={"backgroundColor": "rgba(251, 191, 36, 0.1)", "color": "var(--warn)", "padding": "8px 12px", "borderRadius": "4px", "display": "inline-flex", "alignItems": "center", "gap": "8px", "fontSize": "12px", "marginTop": "16px"}
+            className="chip chip-warn",
+            style={"marginTop": "16px"}
         )
         
     metrics_row = dbc.Row([
@@ -160,12 +161,12 @@ def run_prediction(symbol, model_name, horizon):
     if 'feature_importance' in res:
         fi = res['feature_importance'].head(10)
         fig_fi = px.bar(fi, x='importance', y='feature', orientation='h')
+        fig_fi.update_traces(marker_color=theme.ACCENT, marker_line=dict(width=0))
+        theme.apply_theme(fig_fi)
         fig_fi.update_layout(
-            template="plotly_dark",
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
-            margin=dict(l=0, r=0, t=0, b=0),
-            height=300
+            margin=dict(l=8, r=16, t=8, b=8),
+            height=300,
+            showlegend=False
         )
         feat_imp_div = html.Div(className="terminal-card", children=[
             html.Div("Feature Importance", className="card-title"),
